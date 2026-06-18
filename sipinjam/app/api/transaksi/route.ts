@@ -65,16 +65,11 @@ export async function PUT(req: Request) {
 
     switch (action) {
       case "APPROVE":
+        // Stok otomatis dikurangi oleh trigger trg_kurangi_stok_approved
         await pool.query<ResultSetHeader>(
           'UPDATE `Transaksi` SET `persetujuan_koordinator` = ? WHERE `nomor` = ?',
           ['approved', id]
         );
-        if (trx.barcode_aset) {
-          await pool.query<ResultSetHeader>(
-            'UPDATE `Alat` SET `jumlah` = `jumlah` - 1 WHERE `kode` = ?',
-            [trx.barcode_aset]
-          );
-        }
         break;
 
       case "REJECT":
@@ -92,20 +87,16 @@ export async function PUT(req: Request) {
         break;
 
       case "KEMBALI":
+        // Stok otomatis ditambahkan oleh trigger trg_tambah_stok_dikembalikan
         await pool.query<ResultSetHeader>(
           'UPDATE `Transaksi` SET `waktu_kembali` = NOW(3), `petugas_kontrol_alat` = ? WHERE `nomor` = ?',
           [petugas || null, id]
         );
-        if (trx.barcode_aset) {
-          const kondisiUpdate = body.kondisi
-            ? ', `kondisi` = ?'
-            : '';
-          const kondisiValues = body.kondisi
-            ? [trx.barcode_aset, body.kondisi]
-            : [trx.barcode_aset];
+        // Update kondisi alat jika ada perubahan (misal: rusak ringan setelah dipakai)
+        if (trx.barcode_aset && body.kondisi) {
           await pool.query<ResultSetHeader>(
-            `UPDATE \`Alat\` SET \`jumlah\` = \`jumlah\` + 1${kondisiUpdate} WHERE \`kode\` = ?`,
-            body.kondisi ? [body.kondisi, trx.barcode_aset] : [trx.barcode_aset]
+            'UPDATE `Alat` SET `kondisi` = ? WHERE `kode` = ?',
+            [body.kondisi, trx.barcode_aset]
           );
         }
         break;

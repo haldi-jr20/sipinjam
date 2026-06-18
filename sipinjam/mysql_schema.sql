@@ -51,9 +51,58 @@ INSERT IGNORE INTO `User` (`email`, `name`, `role`, `instansi`, `divisi`, `accou
   ('budi@sipinjam.com', 'Ir. Budi Santoso', 'koordinator', 'PT. BKI Cabang Sorong', 'Produksi', 'approved', 'sipinjam123'),
   ('hendra@sipinjam.com', 'Hendra Saputra', 'petugas', 'PT. BKI Cabang Sorong', 'Gudang', 'approved', 'sipinjam123');
 
--- CATATAN: 
--- Trigger untuk mengurangi dan menambah stok (trg_kurangi_stok_approved & trg_tambah_stok_dikembalikan) 
--- telah DIHAPUS dari skema ini. 
--- Hal ini karena setelah migrasi ke Prisma, logika penambahan/pengurangan stok
--- sekarang ditangani secara langsung melalui backend API di dalam file `app/api/transaksi/route.ts`.
--- Menyimpan trigger di database akan menyebabkan stok dihitung dobel.
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- TRIGGER: Otomatis kurangi stok saat transaksi disetujui (approved)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- Trigger ini mengurangi jumlah alat di tabel `Alat` sebanyak 1 unit
+-- ketika kolom `persetujuan_koordinator` berubah menjadi 'approved'.
+-- Hanya berjalan jika barcode_aset tidak NULL dan status benar-benar berubah.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+DELIMITER //
+
+CREATE TRIGGER trg_kurangi_stok_approved
+BEFORE UPDATE ON `Transaksi`
+FOR EACH ROW
+BEGIN
+  -- Hanya jalankan jika status persetujuan berubah menjadi 'approved'
+  -- dan sebelumnya BUKAN 'approved' (mencegah pengurangan dobel)
+  IF NEW.persetujuan_koordinator = 'approved'
+     AND OLD.persetujuan_koordinator <> 'approved'
+     AND NEW.barcode_aset IS NOT NULL
+  THEN
+    UPDATE `Alat`
+    SET `jumlah` = `jumlah` - 1
+    WHERE `kode` = NEW.barcode_aset;
+  END IF;
+END //
+
+DELIMITER ;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- TRIGGER: Otomatis tambah stok saat alat dikembalikan
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- Trigger ini menambah jumlah alat di tabel `Alat` sebanyak 1 unit
+-- ketika kolom `waktu_kembali` diisi (dari NULL menjadi memiliki nilai).
+-- Ini menandakan bahwa alat telah dikembalikan oleh peminjam.
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+DELIMITER //
+
+CREATE TRIGGER trg_tambah_stok_dikembalikan
+BEFORE UPDATE ON `Transaksi`
+FOR EACH ROW
+BEGIN
+  -- Hanya jalankan jika waktu_kembali baru saja diisi (sebelumnya NULL)
+  -- dan barcode_aset tersedia
+  IF OLD.waktu_kembali IS NULL
+     AND NEW.waktu_kembali IS NOT NULL
+     AND NEW.barcode_aset IS NOT NULL
+  THEN
+    UPDATE `Alat`
+    SET `jumlah` = `jumlah` + 1
+    WHERE `kode` = NEW.barcode_aset;
+  END IF;
+END //
+
+DELIMITER ;
