@@ -1,0 +1,36 @@
+{
+  "name": "sipinjam-alat",
+  "version": "1.0.0",
+  "description": "Aplikasi web untuk mengelola peminjaman alat produksi dengan alur approval Supervisor.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^1.20.0",
+    "next": "^16.2.9",
+    "nodemailer": "^9.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^6.0.3"
+  }
+}

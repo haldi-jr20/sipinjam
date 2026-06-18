@@ -1,0 +1,32 @@
+{
+  "name": "sipinjam",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^1.20.0",
+    "mysql2": "^3.22.5",
+    "next": "16.2.9",
+    "nodemailer": "^9.0.1",
+    "react": "19.2.4",
+    "react-barcode": "^1.6.1",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.1",
+    "@types/node": "^20",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^5"
+  }
+}
