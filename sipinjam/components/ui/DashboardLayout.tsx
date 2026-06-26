@@ -124,7 +124,7 @@ export default function DashboardLayout({ children, pageTitle, pageSubtitle, hea
             <span className="text-on-surface-variant opacity-80">Cabang Sorong</span>
           </div>
           <div className="text-sm opacity-80 text-center">
-            © 2024 SiPinjam Industrial Systems. All Rights Reserved.
+            © 2026 SiPinjam Industrial Systems. All Rights Reserved.
           </div>
         </div>
       </footer>

@@ -10,7 +10,7 @@ import Barcode from "react-barcode";
 
 export default function PetugasPage() {
   const router = useRouter();
-  const { user, data, dispatch, alatList, addAlat } = useTransaction();
+  const { user, data, alatList, ajukanPeminjaman, updateStatus, tambahAlat } = useTransaction();
 
   const [tab, setTab] = useState("keluar");
   const [modal, setModal] = useState<any>(null);
@@ -39,6 +39,7 @@ export default function PetugasPage() {
   const [keteranganTarget, setKeteranganTarget] = useState("");
   const [scanAjukanErr, setScanAjukanErr] = useState("");
   const [ajukanOk, setAjukanOk] = useState(false);
+  const [konfirmasiRusak, setKonfirmasiRusak] = useState(false);
 
   useEffect(() => {
     if (!user) router.push("/login");
@@ -61,7 +62,7 @@ export default function PetugasPage() {
     const dipinjamCount = activeTrx.length;
     const total = alat.jumlah || 1;
     const tersediaCount = total - dipinjamCount;
-    const lastCondition = "Baik";
+    const lastCondition = alat.kondisi || "Baik";
 
     return {
       ...alat, total, tersediaCount, dipinjamCount,
@@ -74,6 +75,12 @@ export default function PetugasPage() {
     ["Total Alat", inventory.reduce((s: number, i: any) => s + i.total, 0), "inventory_2", "text-on-surface"],
     ["Tersedia", inventory.reduce((s: number, i: any) => s + i.tersediaCount, 0), "check_circle", "text-emerald-600"],
     ["Dipinjam", inventory.reduce((s: number, i: any) => s + i.dipinjamCount, 0), "outbound", "text-primary"],
+  ];
+
+  const kondisiCardStats = [
+    { label: "Kondisi Baik", val: inventory.filter((i:any) => i.kondisi === "Baik" || i.kondisi === "Kondisi Baik" || !i.kondisi).reduce((s:number, i:any)=>s+i.total, 0), icon: "verified", color: "text-emerald-600" },
+    { label: "Rusak Ringan", val: inventory.filter((i:any) => i.kondisi === "Rusak Ringan" || i.kondisi === "Kondisi Kurang Baik").reduce((s:number, i:any)=>s+i.total, 0), icon: "build", color: "text-amber-600" },
+    { label: "Rusak Berat / Service", val: inventory.filter((i:any) => i.kondisi === "Rusak Berat" || i.kondisi === "Service").reduce((s:number, i:any)=>s+i.total, 0), icon: "error", color: "text-error" },
   ];
 
   const kategoriStats = alatList.reduce((acc: any, alat: any) => {
@@ -90,29 +97,24 @@ export default function PetugasPage() {
     return (a.jumlah || 1) - dipinjamCount;
   }
   const sisaStokTarget = getTersedia(alatKodeTarget);
+  const isRusakRingan = alatTarget && (alatTarget.kondisi === "Rusak Ringan" || alatTarget.kondisi === "Kondisi Kurang Baik");
 
-  function submitAjukan(e: React.FormEvent) {
+  async function submitAjukan(e: React.FormEvent) {
     e.preventDefault();
     const qty = parseInt(jumlahPinjamTarget);
     if (!alatTarget || qty < 1 || qty > sisaStokTarget || !peminjamName) return;
-    dispatch({
-      type: "ADD",
-      payload: {
-        nomor: Date.now(),
-        barcode_aset: alatTarget.kode,
-        nama_alat_produksi: alatTarget.nama,
-        peminjam: peminjamName,
-        peminjam_instansi: peminjamInstansi,
-        peminjam_divisi: peminjamDivisi,
-        peminjam_kontak: peminjamKontak,
-        persetujuan_koordinator: "pending",
-        waktu_keluar: null,
-        waktu_kembali: null,
-        petugas_kontrol_alat: null
-      }
+    await ajukanPeminjaman({
+      barcode_aset: alatTarget.kode,
+      nama_alat_produksi: alatTarget.nama,
+      peminjam: peminjamName,
+      peminjam_instansi: peminjamInstansi,
+      peminjam_divisi: peminjamDivisi,
+      peminjam_kontak: peminjamKontak,
+      keterangan: keteranganTarget,
     });
     setAlatTarget(null); setAlatKodeTarget(""); setJumlahPinjamTarget("1"); setKeteranganTarget("");
     setPeminjamName(""); setPeminjamInstansi(""); setPeminjamDivisi(""); setPeminjamKontak("");
+    setKonfirmasiRusak(false);
     setAjukanOk(true);
     setTimeout(() => { setAjukanOk(false); setTab("keluar"); }, 1600);
   }
@@ -146,19 +148,19 @@ export default function PetugasPage() {
     }
   }
 
-  function doTambahAlat() {
+  async function doTambahAlat() {
     if (!newKode || !newNama || !newKategori || parseInt(newJumlah) < 1) return;
     let finalKategori = newKategori.trim();
     const existingCat = Object.keys(kategoriStats).find(k => k.toLowerCase() === finalKategori.toLowerCase());
     if (existingCat) finalKategori = existingCat;
-    addAlat(newKode, newNama, finalKategori, parseInt(newJumlah));
+    await tambahAlat(newKode, newNama, finalKategori, parseInt(newJumlah));
     setModal({ type: "tambah_alat_sukses", kode: newKode, nama: newNama });
   }
 
   function doKeluar() {
     setLoading(true);
-    setTimeout(() => {
-      dispatch({ type: "KELUAR", id: modal.trx.nomor, petugas: user.name });
+    setTimeout(async () => {
+      await updateStatus(modal.trx.nomor, "KELUAR", user.name);
       closeModal(); setTab("dipinjam");
     }, 1300);
   }
@@ -170,14 +172,21 @@ export default function PetugasPage() {
       return;
     }
     setStep(3);
-    setTimeout(() => {
-      dispatch({ type: "KEMBALI", id: modal.trx.nomor, kondisi, deskripsi: deskripsiKondisi, petugas: user.name });
+    setTimeout(async () => {
+      await updateStatus(modal.trx.nomor, "KEMBALI", user.name, kondisi, deskripsiKondisi);
       closeModal(); setTab("selesai");
     }, 1400);
   }
 
   const kondisiOpts = ["Baik", "Rusak Ringan", "Rusak Berat"];
-  const kondisiColor: any = { "Baik": "text-emerald-600", "Rusak Ringan": "text-amber-600", "Rusak Berat": "text-error" };
+  const kondisiColor: any = { 
+    "Baik": "text-emerald-600", 
+    "Kondisi Baik": "text-emerald-600",
+    "Rusak Ringan": "text-amber-600", 
+    "Kondisi Kurang Baik": "text-amber-600",
+    "Rusak Berat": "text-error",
+    "Service": "text-error"
+  };
 
   function TrxRow({ t, btn, onBtn, btnIcon, colorTheme }: { t: any, btn: string, onBtn: any, btnIcon: any, colorTheme: 'blue' | 'emerald' }) {
     const isBlue = colorTheme === 'blue';
@@ -320,13 +329,16 @@ export default function PetugasPage() {
                       setAlatKodeTarget(e.target.value);
                       setJumlahPinjamTarget("1");
                       setScanAjukanErr("");
+                      setKonfirmasiRusak(false);
                     }}
                     className="w-full appearance-none bg-background dark:bg-inverse-surface border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface dark:text-inverse-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md"
                   >
                     <option value="">Pilih dari katalog...</option>
                     {alatList.map((a: any) => {
                       const stok = getTersedia(a.kode);
-                      return <option key={a.kode} value={a.kode} disabled={stok === 0}>{a.nama} {stok === 0 ? "(Habis)" : `(${stok} tersedia)`}</option>
+                      const isRusakBerat = a.kondisi === "Rusak Berat" || a.kondisi === "Service";
+                      const disabled = stok === 0 || isRusakBerat;
+                      return <option key={a.kode} value={a.kode} disabled={disabled}>{a.nama} {stok === 0 ? "(Habis)" : isRusakBerat ? `(Rusak Berat)` : `(${stok} tersedia) - ${a.kondisi || 'Baik'}`}</option>
                     })}
                   </select>
                   <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
@@ -341,8 +353,10 @@ export default function PetugasPage() {
                       const found = alatList.find((a: any) => a.kode.toLowerCase() === code.toLowerCase() || a.nama.toLowerCase() === code.toLowerCase());
                       if (found) {
                         const stok = getTersedia(found.kode);
-                        if (stok === 0) setScanAjukanErr(`Alat "${found.nama}" sedang tidak tersedia.`);
-                        else { setAlatTarget(found); setAlatKodeTarget(found.kode); setJumlahPinjamTarget("1"); }
+                        const isRusakBerat = found.kondisi === "Rusak Berat" || found.kondisi === "Service";
+                        if (isRusakBerat) setScanAjukanErr(`Alat "${found.nama}" sedang rusak berat/service dan tidak bisa dipinjam.`);
+                        else if (stok === 0) setScanAjukanErr(`Alat "${found.nama}" sedang tidak tersedia.`);
+                        else { setAlatTarget(found); setAlatKodeTarget(found.kode); setJumlahPinjamTarget("1"); setKonfirmasiRusak(false); }
                       } else {
                         setScanAjukanErr(`Kode "${code}" tidak ditemukan.`);
                       }
@@ -365,7 +379,7 @@ export default function PetugasPage() {
                   </div>
                   <div className="flex-1">
                     <p className="font-label-md text-label-md text-on-surface dark:text-inverse-on-surface">{alatTarget.nama}</p>
-                    <p className="text-xs text-on-surface-variant dark:text-outline-variant mt-0.5">{alatTarget.kode}</p>
+                    <p className="text-xs text-on-surface-variant dark:text-outline-variant mt-0.5">{alatTarget.kode} • Kondisi: <span className={`font-bold ${kondisiColor[alatTarget.kondisi] || 'text-outline-variant'}`}>{alatTarget.kondisi || 'Baik'}</span></p>
                   </div>
                   <button type="button" onClick={() => { setAlatTarget(null); setAlatKodeTarget(""); }} className="text-outline hover:text-error transition-colors p-1">
                     <XCircle size={16} />
@@ -404,10 +418,24 @@ export default function PetugasPage() {
               ></textarea>
             </div>
 
+            {isRusakRingan && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-xl p-4 flex gap-3 items-start mt-2">
+                <Info size={18} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-amber-800 dark:text-amber-300 font-bold text-sm">Peringatan: Alat {alatTarget.kondisi}</p>
+                  <p className="text-amber-700 dark:text-amber-400 text-xs mt-1 mb-3">Peminjam perlu mengetahui bahwa alat ini tercatat dalam kondisi kurang baik. Pastikan mereka bersedia menerima risiko ini sebelum melanjutkan.</p>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={konfirmasiRusak} onChange={e => setKonfirmasiRusak(e.target.checked)} className="mt-0.5 w-4 h-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500" />
+                    <span className="text-xs font-bold text-amber-800 dark:text-amber-300 leading-tight">Saya mengonfirmasi bahwa peminjam bersedia meminjam alat dalam kondisi ini.</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             <div className="mt-stack-sm flex justify-end">
               <button
                 type="submit"
-                disabled={!alatTarget || parseInt(jumlahPinjamTarget) < 1 || parseInt(jumlahPinjamTarget) > sisaStokTarget || !peminjamName}
+                disabled={!alatTarget || parseInt(jumlahPinjamTarget) < 1 || parseInt(jumlahPinjamTarget) > sisaStokTarget || !peminjamName || (isRusakRingan && !konfirmasiRusak)}
                 className="w-full md:w-auto bg-gradient-to-r from-primary to-surface-tint text-on-primary px-8 py-3 rounded-xl font-label-md text-label-md hover:shadow-[0_8px_16px_rgba(53,37,205,0.25)] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center justify-center gap-2"
               >
                 Kirim Pengajuan
@@ -589,6 +617,35 @@ export default function PetugasPage() {
         </div>
       )}
 
+      {modal?.type === "lihat_kondisi" && (
+        <div className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-surface dark:bg-inverse-surface rounded-[24px] p-6 w-full max-w-sm ambient-shadow-lvl2 border border-outline-variant/20 relative animate-fadeIn">
+            <button onClick={closeModal} className="absolute top-4 right-4 text-outline hover:text-error"><X size={20} /></button>
+            <h3 className="font-headline-md text-lg text-on-surface dark:text-inverse-on-surface mb-4">Informasi Kondisi Alat</h3>
+            
+            <div className="bg-surface-container-lowest dark:bg-black/20 p-4 rounded-xl border border-outline-variant/10 mb-4">
+                <p className="font-bold text-sm text-on-surface dark:text-inverse-on-surface">{modal.alat.nama}</p>
+                <p className="text-xs text-outline-variant mt-1">{modal.alat.kode}</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-xs text-outline font-bold uppercase tracking-wider mb-1">Status Ketersediaan</p>
+                <p className="text-sm font-bold text-on-surface dark:text-inverse-on-surface">{modal.alat.status} ({modal.alat.tersediaCount} dari {modal.alat.total} unit)</p>
+              </div>
+              <div>
+                <p className="text-xs text-outline font-bold uppercase tracking-wider mb-1">Kondisi Fisik Saat Ini</p>
+                <p className={`text-sm font-bold ${kondisiColor[modal.alat.kondisi] || 'text-on-surface dark:text-inverse-on-surface'}`}>{modal.alat.kondisi || 'Baik'}</p>
+              </div>
+            </div>
+
+            <button onClick={closeModal} className="w-full mt-6 bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-3 rounded-xl font-bold text-sm transition-all">
+                Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ─── TRANSAKSI VIEWS ─── */}
       {(tab === "keluar" || tab === "dipinjam") && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter animate-fadeIn">
@@ -623,7 +680,9 @@ export default function PetugasPage() {
             <div className="col-span-full py-16 text-center">
               <h3 className="font-headline-md text-lg text-on-surface dark:text-inverse-on-surface mb-2">Belum ada riwayat</h3>
             </div>
-          ) : selesai.map((t: any) => (
+          ) : selesai.map((t: any) => {
+            const alat = alatList.find((a: any) => a.kode === t.barcode_aset);
+            return (
             <div key={t.nomor} className="bg-surface dark:bg-surface-container-lowest/5 rounded-[20px] p-5 border border-outline-variant/10 ambient-shadow-lvl1 flex flex-col gap-4">
               <div className="flex justify-between items-start gap-2">
                 <h3 className="font-bold text-on-surface dark:text-inverse-on-surface text-sm">{t.nama_alat_produksi}</h3>
@@ -646,9 +705,19 @@ export default function PetugasPage() {
                   <p className="text-[10px] text-outline font-semibold uppercase tracking-wider mb-1">Waktu Kembali</p>
                   <p className="text-xs text-emerald-600 font-bold">{fmtDate(t.waktu_kembali)}</p>
                 </div>
+                <div className="col-span-2">
+                  <p className="text-[10px] text-outline font-semibold uppercase tracking-wider mb-1">Kondisi Alat Saat Ini</p>
+                  <p className={`text-xs font-bold ${kondisiColor[alat?.kondisi] || 'text-outline'}`}>{alat?.kondisi || '—'}</p>
+                </div>
+                {t.catatan_kembali && (
+                  <div className="col-span-2 mt-1">
+                    <p className="text-[10px] text-outline font-semibold uppercase tracking-wider mb-1">Catatan Pengembalian</p>
+                    <p className="text-xs text-on-surface-variant dark:text-outline-variant p-3 bg-surface-container-lowest dark:bg-black/20 rounded-xl border border-outline-variant/10">{t.catatan_kembali}</p>
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -683,6 +752,20 @@ export default function PetugasPage() {
             ))}
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mt-2">
+            {kondisiCardStats.map((s, i) => (
+              <div key={i} className="bg-surface dark:bg-surface-container-lowest/5 rounded-2xl p-4 border border-outline-variant/10 ambient-shadow-lvl1 flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full bg-surface-container-low dark:bg-black/20 flex items-center justify-center ${s.color}`}>
+                  <span className="material-symbols-outlined text-[24px]">{s.icon}</span>
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
+                  <p className="text-xs text-outline font-bold uppercase tracking-wider">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter mt-2">
             {inventory.length === 0 ? <div className="col-span-full py-16 text-center text-outline"><PackageSearch size={32} className="mx-auto mb-2" />Belum ada katalog.</div> : inventory.map((i: any) => (
               <div key={i.kode} className="bg-surface dark:bg-surface-container-lowest/5 border border-outline-variant/10 rounded-2xl p-4 flex gap-4 ambient-shadow-lvl1">
@@ -698,6 +781,9 @@ export default function PetugasPage() {
                     <p className="text-xs text-outline-variant font-code-hud">{i.kode}</p>
                     <button onClick={() => setModal({ type: "lihat_qr", kode: i.kode, nama: i.nama })} className="text-[10px] bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant px-2 py-1 rounded-md font-bold transition-colors flex items-center gap-1 active:scale-95">
                       <span className="material-symbols-outlined text-[12px]">barcode</span> Barcode
+                    </button>
+                    <button onClick={() => setModal({ type: "lihat_kondisi", alat: i })} className="text-[10px] bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant px-2 py-1 rounded-md font-bold transition-colors flex items-center gap-1 active:scale-95">
+                      <span className="material-symbols-outlined text-[12px]">info</span> Detail Kondisi
                     </button>
                   </div>
 

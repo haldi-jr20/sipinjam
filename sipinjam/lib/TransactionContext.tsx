@@ -104,11 +104,11 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     await fetchTransaksi();
   };
 
-  const updateStatus = async (id: number, action: "APPROVE" | "REJECT" | "KELUAR" | "KEMBALI", petugas?: string, kondisi?: string) => {
+  const updateStatus = async (id: number, action: "APPROVE" | "REJECT" | "KELUAR" | "KEMBALI", petugas?: string, kondisi?: string, catatan?: string) => {
     await fetch('/api/transaksi', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, action, petugas, kondisi })
+      body: JSON.stringify({ id, action, petugas, kondisi, catatan })
     });
     await fetchTransaksi();
     if (action === "APPROVE" || action === "KEMBALI") {

@@ -89,8 +89,8 @@ export async function PUT(req: Request) {
       case "KEMBALI":
         // Stok otomatis ditambahkan oleh trigger trg_tambah_stok_dikembalikan
         await pool.query<ResultSetHeader>(
-          'UPDATE `Transaksi` SET `waktu_kembali` = NOW(3), `petugas_kontrol_alat` = ? WHERE `nomor` = ?',
-          [petugas || null, id]
+          'UPDATE `Transaksi` SET `waktu_kembali` = NOW(3), `petugas_kontrol_alat` = ?, `catatan_kembali` = ? WHERE `nomor` = ?',
+          [petugas || null, body.catatan || null, id]
         );
         // Update kondisi alat jika ada perubahan (misal: rusak ringan setelah dipakai)
         if (trx.barcode_aset && body.kondisi) {

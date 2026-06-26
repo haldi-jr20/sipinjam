@@ -116,9 +116,6 @@ export default function LoginPage() {
         </div>
 
         {/* Footer subtly integrated */}
-        <p className="text-center font-code-hud text-code-hud text-on-surface-variant/70 mt-stack-lg">
-          PROTECTED BY ENTERPRISE ENCRYPTION PROTOCOLS
-        </p>
       </main>
     </div>
   );

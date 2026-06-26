@@ -9,15 +9,11 @@ import { PhaseChip, FlowTracker, fmtRel, Avt, Empty } from "@/components/ui/Shar
 
 export default function KoordinatorPage() {
   const router = useRouter();
-  const { user, data, dispatch, alatList, accounts, approveAccount, rejectAccount, deleteAccount } = useTransaction();
+  const { user, data, updateStatus, alatList } = useTransaction();
 
   const [tab, setTab] = useState("pending");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [alasan, setAlasan] = useState("");
-  const [rejectEmail, setRejectEmail] = useState<string | null>(null);
-  const [viewIdCard, setViewIdCard] = useState<{name:string, src:string, status:string, email:string}|null>(null);
-  const [revokeEmail, setRevokeEmail] = useState<string | null>(null);
-  const [revokeConfirmStep, setRevokeConfirmStep] = useState(1);
 
   useEffect(() => {
     if (!user) router.push("/login");
@@ -29,9 +25,7 @@ export default function KoordinatorPage() {
   const pending = data.filter((t: any) => t.persetujuan_koordinator === "pending").sort((a: any, b: any) => b.nomor - a.nomor);
   const semua = data.slice().sort((a: any, b: any) => b.nomor - a.nomor);
 
-  const peminjamPending = Object.entries(accounts).filter(([,v]: any) => v.role === "peminjam" && v.account_status === "pending");
-  const peminjamAktif = Object.entries(accounts).filter(([,v]: any) => v.role === "peminjam" && v.account_status === "approved");
-  const peminjamDitolak = Object.entries(accounts).filter(([,v]: any) => v.role === "peminjam" && v.account_status === "rejected");
+
 
   // Inventory Calculation
   const inventory = alatList.map((alat: any) => {
@@ -42,7 +36,7 @@ export default function KoordinatorPage() {
     const dipinjamCount = activeTrx.length;
     const total = alat.jumlah || 1;
     const tersediaCount = total - dipinjamCount;
-    const lastCondition = "Baik";
+    const lastCondition = alat.kondisi || "Baik";
     
     return { 
       ...alat, 
@@ -60,6 +54,12 @@ export default function KoordinatorPage() {
     ["Dipinjam", inventory.reduce((s:number, i:any)=>s + i.dipinjamCount, 0), "outbound", "text-primary"],
   ];
 
+  const kondisiCardStats = [
+    { label: "Kondisi Baik", val: inventory.filter((i:any) => i.kondisi === "Baik" || i.kondisi === "Kondisi Baik" || !i.kondisi).reduce((s:number, i:any)=>s+i.total, 0), icon: "verified", color: "text-emerald-600" },
+    { label: "Rusak Ringan", val: inventory.filter((i:any) => i.kondisi === "Rusak Ringan" || i.kondisi === "Kondisi Kurang Baik").reduce((s:number, i:any)=>s+i.total, 0), icon: "build", color: "text-amber-600" },
+    { label: "Rusak Berat / Service", val: inventory.filter((i:any) => i.kondisi === "Rusak Berat" || i.kondisi === "Service").reduce((s:number, i:any)=>s+i.total, 0), icon: "error", color: "text-error" },
+  ];
+
   const kategoriStats = alatList.reduce((acc: any, alat: any) => {
     acc[alat.kategori] = (acc[alat.kategori] || 0) + (alat.jumlah || 1);
     return acc;
@@ -68,8 +68,7 @@ export default function KoordinatorPage() {
   const stats = [
     { label: "Menunggu Approval", val: pending.length, icon: "pending_actions", color: "text-tertiary" },
     { label: "Disetujui", val: data.filter((t: any) => t.persetujuan_koordinator === "approved").length, icon: "verified", color: "text-secondary" },
-    { label: "Ditolak", val: data.filter((t: any) => t.persetujuan_koordinator === "rejected").length, icon: "cancel", color: "text-error" },
-    { label: "Peminjam Aktif", val: peminjamAktif.length, icon: "group", color: "text-primary" }
+    { label: "Ditolak", val: data.filter((t: any) => t.persetujuan_koordinator === "rejected").length, icon: "cancel", color: "text-error" }
   ];
 
   function TrxCard({ t }: { t: any }) {
@@ -99,7 +98,7 @@ export default function KoordinatorPage() {
             <button onClick={()=>{setRejectId(t.nomor);setAlasan("");}} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-error/30 bg-error-container/10 text-error hover:bg-error-container/30 transition-colors text-xs font-bold">
               <XCircle size={14}/> Tolak
             </button>
-            <button onClick={()=>dispatch({type:"APPROVE",id:t.nomor})} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-secondary/30 bg-secondary-container/10 text-secondary hover:bg-secondary-container/30 transition-colors text-xs font-bold">
+            <button onClick={async ()=>await updateStatus(t.nomor, "APPROVE")} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-secondary/30 bg-secondary-container/10 text-secondary hover:bg-secondary-container/30 transition-colors text-xs font-bold">
               <CheckCircle size={14}/> Setujui
             </button>
           </div>
@@ -114,8 +113,7 @@ export default function KoordinatorPage() {
       {[
         { id: "pending", label: `Perlu Ditinjau ${pending.length > 0 ? `(${pending.length})` : ''}`, icon: "gavel" },
         { id: "semua", label: "Semua Transaksi", icon: "receipt_long" },
-        { id: "inventaris", label: "Inventaris", icon: "handyman" },
-        { id: "peminjam", label: `Kelola Akun ${peminjamPending.length > 0 ? `(${peminjamPending.length}!)` : ''}`, icon: "manage_accounts" }
+        { id: "inventaris", label: "Inventaris", icon: "handyman" }
       ].map(t => (
         <button 
           key={t.id} 
@@ -157,7 +155,7 @@ export default function KoordinatorPage() {
             />
             <button 
               disabled={!alasan.trim()} 
-              onClick={()=>{dispatch({type:"REJECT",id:rejectId,alasan});setRejectId(null);}} 
+              onClick={async ()=>{if(rejectId) await updateStatus(Number(rejectId), "REJECT");setRejectId(null);}}
               className="w-full bg-error text-on-error py-3 rounded-xl font-bold text-sm hover:shadow-lg disabled:opacity-50 transition-all"
             >
               Kirim Penolakan
@@ -166,31 +164,11 @@ export default function KoordinatorPage() {
         </div>
       )}
 
-      {viewIdCard && (
-        <div className="fixed inset-0 bg-on-surface/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-          <div className="bg-surface dark:bg-inverse-surface rounded-[24px] p-2 w-full max-w-md ambient-shadow-lvl2 border border-outline-variant/20 relative flex flex-col animate-fadeIn">
-            <div className="flex justify-between items-center p-4 pb-2 border-b border-outline-variant/10">
-              <h3 className="font-headline-md text-sm text-on-surface dark:text-inverse-on-surface flex items-center gap-2">
-                <IdCard size={18} className="text-primary"/> ID Card: {viewIdCard.name}
-              </h3>
-              <button onClick={()=>setViewIdCard(null)} className="text-outline hover:text-error"><X size={20}/></button>
-            </div>
-            <div className="p-4 bg-background dark:bg-black/20 overflow-hidden flex justify-center">
-              <img src={viewIdCard.src} alt="ID Card" className="max-w-full max-h-[60vh] object-contain rounded-lg border border-outline-variant/20 shadow-sm" />
-            </div>
-            {viewIdCard.status === "pending" && (
-              <div className="p-4 flex gap-2 border-t border-outline-variant/10">
-                <button onClick={()=>{rejectAccount(viewIdCard.email); setViewIdCard(null);}} className="flex-1 bg-error-container/20 text-error border border-error/30 py-2 rounded-xl text-xs font-bold hover:bg-error-container/40">Tolak Akun</button>
-                <button onClick={()=>{approveAccount(viewIdCard.email); setViewIdCard(null);}} className="flex-1 bg-secondary text-on-secondary py-2 rounded-xl text-xs font-bold hover:brightness-110">Setujui Akun</button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
 
       {/* ─── STATS GRID ─── */}
-      {tab !== "inventaris" && tab !== "peminjam" && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter mb-stack-lg">
+      {tab !== "inventaris" && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-gutter mb-stack-lg">
           {stats.map((s, i) => (
             <div key={i} className="bg-surface dark:bg-surface-container-lowest/5 rounded-2xl p-4 border border-outline-variant/10 ambient-shadow-lvl1 flex flex-col gap-2 items-center text-center">
               <span className={`material-symbols-outlined text-[28px] ${s.color}`}>{s.icon}</span>
@@ -242,6 +220,20 @@ export default function KoordinatorPage() {
             ))}
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter mt-2">
+            {kondisiCardStats.map((s, i) => (
+               <div key={i} className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-4 border border-primary/10 flex items-center gap-4">
+                 <div className={`w-12 h-12 rounded-full bg-surface dark:bg-inverse-surface flex items-center justify-center shadow-sm ${s.color}`}>
+                    <span className="material-symbols-outlined">{s.icon}</span>
+                 </div>
+                 <div>
+                    <p className={`text-2xl font-bold ${s.color} dark:text-inverse-on-surface`}>{s.val}</p>
+                    <p className="text-xs text-on-surface-variant dark:text-outline-variant font-semibold">{s.label}</p>
+                 </div>
+               </div>
+            ))}
+          </div>
+
           <div className="bg-surface dark:bg-surface-container-lowest/5 rounded-[24px] p-stack-lg border border-outline-variant/10 ambient-shadow-lvl1">
             <h3 className="font-headline-md text-lg text-on-surface dark:text-inverse-on-surface mb-stack-md flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">category</span>
@@ -259,96 +251,7 @@ export default function KoordinatorPage() {
         </div>
       )}
 
-      {/* ─── KELOLA AKUN ─── */}
-      {tab === "peminjam" && (
-        <div className="animate-fadeIn flex flex-col gap-stack-lg">
-          
-          {/* Pending Approval */}
-          {peminjamPending.length > 0 && (
-            <div className="bg-tertiary/5 border border-tertiary/20 rounded-[24px] p-stack-lg">
-              <h3 className="font-headline-md text-tertiary dark:text-tertiary-fixed-dim mb-4 flex items-center gap-2 text-sm">
-                <span className="material-symbols-outlined">how_to_reg</span>
-                Menunggu Persetujuan Akun ({peminjamPending.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-gutter">
-                {peminjamPending.map(([email, acc]: any) => (
-                  <div key={email} className="bg-surface dark:bg-inverse-surface rounded-2xl p-5 border border-tertiary/30 ambient-shadow-lvl1 flex flex-col gap-4">
-                    <div className="flex gap-4 items-center">
-                      <div className="w-12 h-12 rounded-full bg-tertiary/20 flex items-center justify-center text-tertiary font-bold text-lg">
-                        {acc.name.substring(0,2).toUpperCase()}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-on-surface dark:text-inverse-on-surface text-sm">{acc.name}</p>
-                        <p className="text-xs text-outline-variant">{email}</p>
-                        <p className="text-xs text-on-surface-variant dark:text-outline-variant mt-1">{acc.instansi} · {acc.divisi}</p>
-                      </div>
-                    </div>
-                    {acc.id_card && (
-                      <button 
-                        onClick={()=>setViewIdCard({name:acc.name, src:acc.id_card, status:acc.account_status, email:email})}
-                        className="flex items-center justify-center gap-2 bg-surface-container-low dark:bg-surface-container-high/20 border border-outline-variant/20 py-2 rounded-xl text-xs font-semibold text-primary hover:bg-surface-container-highest transition-colors"
-                      >
-                        <IdCard size={14}/> Lihat ID Card
-                      </button>
-                    )}
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <button onClick={()=>rejectAccount(email)} className="bg-error-container/10 border border-error/30 text-error py-2 rounded-xl text-xs font-bold hover:bg-error-container/30 transition-colors">Tolak</button>
-                      <button onClick={()=>approveAccount(email)} className="bg-secondary-container/10 border border-secondary/30 text-secondary py-2 rounded-xl text-xs font-bold hover:bg-secondary-container/30 transition-colors">Setujui</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
-            {/* Active Users */}
-            <div className="bg-surface dark:bg-surface-container-lowest/5 border border-outline-variant/10 rounded-[24px] p-stack-lg ambient-shadow-lvl1">
-              <h3 className="font-headline-md text-primary dark:text-primary-fixed-dim mb-4 flex items-center gap-2 text-sm">
-                <span className="material-symbols-outlined">group</span>
-                Peminjam Aktif ({peminjamAktif.length})
-              </h3>
-              <div className="flex flex-col gap-3">
-                {peminjamAktif.map(([email, acc]: any) => (
-                  <div key={email} className="bg-background dark:bg-inverse-surface border border-outline-variant/10 rounded-xl p-3 flex items-center justify-between gap-4">
-                     <div>
-                        <p className="font-bold text-on-surface dark:text-inverse-on-surface text-sm">{acc.name}</p>
-                        <p className="text-[10px] text-outline-variant">{acc.instansi} · {email}</p>
-                     </div>
-                     <button onClick={()=>rejectAccount(email)} className="text-xs text-error font-semibold px-3 py-1.5 border border-error/20 rounded-lg hover:bg-error/10 transition-colors">
-                        Cabut Akses
-                     </button>
-                  </div>
-                ))}
-                {peminjamAktif.length === 0 && <p className="text-sm text-outline text-center py-4">Belum ada peminjam aktif.</p>}
-              </div>
-            </div>
-
-            {/* Rejected Users */}
-            {peminjamDitolak.length > 0 && (
-              <div className="bg-surface dark:bg-surface-container-lowest/5 border border-error/10 rounded-[24px] p-stack-lg ambient-shadow-lvl1">
-                <h3 className="font-headline-md text-error dark:text-error/80 mb-4 flex items-center gap-2 text-sm">
-                  <span className="material-symbols-outlined">person_off</span>
-                  Akun Ditolak / Dicabut ({peminjamDitolak.length})
-                </h3>
-                <div className="flex flex-col gap-3">
-                  {peminjamDitolak.map(([email, acc]: any) => (
-                    <div key={email} className="bg-error/5 dark:bg-error/10 border border-error/10 rounded-xl p-3 flex items-center justify-between gap-4">
-                       <div className="opacity-70">
-                          <p className="font-bold text-on-surface dark:text-inverse-on-surface text-sm line-through decoration-error/50">{acc.name}</p>
-                          <p className="text-[10px] text-outline-variant">{acc.instansi} · {email}</p>
-                       </div>
-                       <button onClick={()=>approveAccount(email)} className="text-xs text-secondary font-semibold px-3 py-1.5 border border-secondary/20 rounded-lg hover:bg-secondary/10 transition-colors">
-                          Pulihkan Akses
-                       </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
     </DashboardLayout>
   );
