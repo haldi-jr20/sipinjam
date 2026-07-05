@@ -7,6 +7,7 @@ const TransactionContext = createContext<any>(null);
 export function TransactionProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<Record<string, any>>({});
   const [alatList, setAlatList] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -15,11 +16,13 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     try {
       const res = await fetch('/api/users');
       const json = await res.json();
+      setUsers(json);
       const map: Record<string, any> = {};
       json.forEach((u: any) => (map[u.email] = u));
       setAccounts(map);
     } catch (e) {}
   };
+
 
   const fetchAlat = async () => {
     try {
@@ -43,7 +46,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
   };
 
   useEffect(() => {
-    const savedUser = sessionStorage.getItem("sipinjam_user");
+    const savedUser = sessionStorage.getItem("pinset_user");
     if (savedUser) {
       try { setUser(JSON.parse(savedUser)); } catch (e) {}
     }
@@ -51,22 +54,22 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const login = (userData: any) => {
-    sessionStorage.setItem("sipinjam_user", JSON.stringify(userData));
+    sessionStorage.setItem("pinset_user", JSON.stringify(userData));
     setUser(userData);
   };
 
   const logout = () => {
-    sessionStorage.removeItem("sipinjam_user");
+    sessionStorage.removeItem("pinset_user");
     setUser(null);
   };
 
-  const registerUser = async (email: string, name: string, role: string, instansi: string, divisi: string, id_card: string = "", password: string = "sipinjam123") => {
+  const registerUser = async (email: string, role: string, instansi: string, divisi: string, id_card: string = "", password: string = "pinset123") => {
     const emailKey = email.toLowerCase().trim();
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailKey, name, role, instansi, divisi, account_status: role === "peminjam" ? "pending" : "approved", id_card, password })
+        body: JSON.stringify({ email: emailKey, role, instansi, divisi, account_status: role === "peminjam" ? "pending" : "approved", id_card, password })
       });
       if (!res.ok) {
         const err = await res.json();
@@ -95,6 +98,31 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     await fetchAlat();
   };
 
+  const updateStatusAlat = async (kode: string, kondisi: string) => {
+    await fetch('/api/alat', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kode, kondisi })
+    });
+    await fetchAlat();
+  };
+
+  const editAlat = async (kode: string, nama: string, kategori: string) => {
+    await fetch('/api/alat', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kode, nama, kategori })
+    });
+    await fetchAlat();
+  };
+
+  const hapusAlat = async (kode: string) => {
+    await fetch(`/api/alat?kode=${encodeURIComponent(kode)}`, {
+      method: 'DELETE',
+    });
+    await fetchAlat();
+  };
+
   const ajukanPeminjaman = async (payload: any) => {
     const res = await fetch('/api/transaksi', {
       method: 'POST',
@@ -104,11 +132,11 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     await fetchTransaksi();
   };
 
-  const updateStatus = async (id: number, action: "APPROVE" | "REJECT" | "KELUAR" | "KEMBALI", petugas?: string, kondisi?: string, catatan?: string) => {
+  const updateStatus = async (id: number, action: "APPROVE" | "REJECT" | "KELUAR" | "KEMBALI", petugas?: string, kondisi?: string, catatan?: string, alasan_penolakan?: string) => {
     await fetch('/api/transaksi', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, action, petugas, kondisi, catatan })
+      body: JSON.stringify({ id, action, petugas, kondisi, catatan, alasan_penolakan })
     });
     await fetchTransaksi();
     if (action === "APPROVE" || action === "KEMBALI") {
@@ -122,6 +150,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         data,
         alatList,
         user,
+        users,
         accounts,
         isLoaded,
         login,
@@ -132,6 +161,9 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         deleteAccount,
         changePassword,
         tambahAlat,
+        updateStatusAlat,
+        editAlat,
+        hapusAlat,
         ajukanPeminjaman,
         updateStatus,
       }}

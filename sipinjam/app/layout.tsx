@@ -14,7 +14,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "SiPinjam — Sistem Keluar Masuk Alat Produksi",
+  title: "PINSET — Sistem Keluar Masuk Alat Produksi",
   description: "Sistem manajemen peminjaman alat produksi dengan approval koordinator",
 };
 

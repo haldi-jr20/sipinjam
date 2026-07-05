@@ -2,10 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, XCircle, CheckCircle, X, Wrench, PackageSearch, Tag, Users, UserCheck, UserX, IdCard, Clock } from "lucide-react";
+import { ShieldCheck, XCircle, CheckCircle, X, Wrench, PackageSearch, Tag, Users, UserCheck, UserX, IdCard, Clock, FileSpreadsheet, FileDown } from "lucide-react";
 import { useTransaction } from "@/lib/TransactionContext";
 import DashboardLayout from "@/components/ui/DashboardLayout";
-import { PhaseChip, FlowTracker, fmtRel, Avt, Empty } from "@/components/ui/SharedUI";
+import { PhaseChip, FlowTracker, fmtRel, Avt, Empty, fmtDate } from "@/components/ui/SharedUI";
+import { exportExcel, exportPDF } from "@/lib/exportUtils";
+function formatArrayStr(str: any, showQty: boolean = false) {
+  if (!str) return "-";
+  try {
+    const arr = JSON.parse(str);
+    if (Array.isArray(arr)) {
+      if (showQty) {
+        const counts: Record<string, number> = {};
+        arr.forEach((n: string) => counts[n] = (counts[n] || 0) + 1);
+        return Object.entries(counts).map(([name, qty]) => `${name} (${qty} unit)`).join(", ");
+      }
+      return arr.join(", ");
+    }
+  } catch(e) {}
+  return str;
+}
 
 export default function KoordinatorPage() {
   const router = useRouter();
@@ -14,6 +30,8 @@ export default function KoordinatorPage() {
   const [tab, setTab] = useState("pending");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [alasan, setAlasan] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [isExporting, setIsExporting] = useState<"" | "excel" | "pdf">("")
 
   useEffect(() => {
     if (!user) router.push("/login");
@@ -23,15 +41,20 @@ export default function KoordinatorPage() {
   if (!user || user.role !== "koordinator") return null;
 
   const pending = data.filter((t: any) => t.persetujuan_koordinator === "pending").sort((a: any, b: any) => b.nomor - a.nomor);
-  const semua = data.slice().sort((a: any, b: any) => b.nomor - a.nomor);
+  
+  // Filter by selected month for history
+  const history = data.filter((t: any) => {
+    if (!t.created_at) return false;
+    return t.created_at.startsWith(selectedMonth);
+  }).sort((a: any, b: any) => b.nomor - a.nomor);
 
 
 
   // Inventory Calculation
   const inventory = alatList.map((alat: any) => {
-    const trx = data.filter((t: any) => t.barcode_aset === alat.kode);
-    const activeTrx = trx.filter((t: any) => t.persetujuan_koordinator === "approved" && !t.waktu_kembali);
-    const completed = trx.filter((t: any) => t.waktu_kembali).sort((a: any, b: any) => new Date(b.waktu_kembali).getTime() - new Date(a.waktu_kembali).getTime());
+    const trx = data.filter((t: any) => t.barcode_aset?.includes(alat.kode));
+    const activeTrx = trx.filter((t: any) => t.persetujuan_koordinator === "approved" && t.catatan_kembali === null); // Approximation of active
+    const completed = trx.filter((t: any) => t.catatan_kembali !== null);
     
     const dipinjamCount = activeTrx.length;
     const total = alat.jumlah || 1;
@@ -67,21 +90,27 @@ export default function KoordinatorPage() {
 
   const stats = [
     { label: "Menunggu Approval", val: pending.length, icon: "pending_actions", color: "text-tertiary" },
-    { label: "Disetujui", val: data.filter((t: any) => t.persetujuan_koordinator === "approved").length, icon: "verified", color: "text-secondary" },
-    { label: "Ditolak", val: data.filter((t: any) => t.persetujuan_koordinator === "rejected").length, icon: "cancel", color: "text-error" }
+    { label: "Disetujui (Bulan Ini)", val: history.filter((t: any) => t.persetujuan_koordinator === "approved").length, icon: "verified", color: "text-secondary" },
+    { label: "Ditolak (Bulan Ini)", val: history.filter((t: any) => t.persetujuan_koordinator === "rejected").length, icon: "cancel", color: "text-error" }
   ];
 
   function TrxCard({ t }: { t: any }) {
     return (
       <div className="bg-surface dark:bg-surface-container-lowest/5 rounded-[20px] p-5 border border-outline-variant/10 ambient-shadow-lvl1 flex flex-col gap-4">
         <div className="flex justify-between items-start gap-2">
-          <div>
-            <h3 className="font-bold text-on-surface dark:text-inverse-on-surface text-sm">{t.nama_alat_produksi}</h3>
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Wrench size={18} />
+            </div>
+            <div>
+              <p className="font-bold text-on-surface dark:text-inverse-on-surface text-sm">{formatArrayStr(t.nama_alat_produksi, true)}</p>
+              <p className="text-xs text-outline-variant mt-0.5">TRX-{t.nomor} • {formatArrayStr(t.barcode_aset)}</p>
+            </div>
           </div>
-          <PhaseChip trx={t}/>
+          <PhaseChip trx={t} />
         </div>
 
-        <div className="pt-3 border-t border-outline-variant/10 flex justify-between items-center gap-4">
+        <div className="pt-3 border-t border-outline-variant/10 flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
               {t.peminjam?.substring(0, 2).toUpperCase() || "U"}
@@ -90,6 +119,15 @@ export default function KoordinatorPage() {
               <p className="text-xs font-bold text-on-surface dark:text-inverse-on-surface">{t.peminjam}</p>
               <p className="text-[10px] text-outline-variant">TRX-{t.nomor}</p>
             </div>
+          </div>
+          <div className="bg-surface-container-lowest dark:bg-black/20 p-2 rounded-lg text-xs text-on-surface-variant border border-outline-variant/10">
+            <p><span className="font-bold text-on-surface">Tujuan:</span> {t.tujuan_peminjaman || "-"}</p>
+            {t.keterangan && <p className="mt-1"><span className="font-bold text-on-surface">Catatan:</span> {t.keterangan}</p>}
+          </div>
+
+          <div className="flex gap-4 text-xs text-outline-variant px-1 mt-1">
+            <p className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">calendar_today</span> <span className="font-semibold text-on-surface">Pinjam:</span> {fmtDate(t.tanggal_peminjaman)}</p>
+            <p className="flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">event_busy</span> <span className="font-semibold text-on-surface">Kembali:</span> {fmtDate(t.tanggal_pengembalian)}</p>
           </div>
         </div>
 
@@ -140,9 +178,9 @@ export default function KoordinatorPage() {
       
       {/* ─── MODALS ─── */}
       {rejectId && (
-        <div className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-          <div className="bg-surface dark:bg-inverse-surface rounded-[24px] p-6 w-full max-w-sm ambient-shadow-lvl2 border border-outline-variant/20 relative animate-fadeIn">
-            <button onClick={()=>setRejectId(null)} className="absolute top-4 right-4 text-outline hover:text-error"><X size={20}/></button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+          <div className="bg-surface dark:bg-inverse-surface rounded-[24px] p-8 w-full max-w-sm ambient-shadow-lvl2 border border-outline-variant/20 relative animate-fadeIn shadow-2xl">
+            <button onClick={()=>setRejectId(null)} className="absolute top-4 right-4 text-outline hover:text-error transition-colors"><X size={20}/></button>
             <h3 className="font-headline-md text-lg text-on-surface dark:text-inverse-on-surface mb-2">Tolak Pengajuan</h3>
             <p className="text-sm text-on-surface-variant dark:text-outline-variant mb-4">Berikan alasan penolakan agar peminjam mengetahui penyebabnya.</p>
             <textarea 
@@ -155,7 +193,12 @@ export default function KoordinatorPage() {
             />
             <button 
               disabled={!alasan.trim()} 
-              onClick={async ()=>{if(rejectId) await updateStatus(Number(rejectId), "REJECT");setRejectId(null);}}
+              onClick={async ()=>{
+                if(rejectId) {
+                  await updateStatus(Number(rejectId), "REJECT", undefined, undefined, undefined, alasan);
+                }
+                setRejectId(null);
+              }}
               className="w-full bg-error text-on-error py-3 rounded-xl font-bold text-sm hover:shadow-lg disabled:opacity-50 transition-all"
             >
               Kirim Penolakan
@@ -180,9 +223,9 @@ export default function KoordinatorPage() {
       )}
 
       {/* ─── TRANSAKSI VIEWS ─── */}
-      {(tab === "pending" || tab === "semua") && (
+      {tab === "pending" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter animate-fadeIn">
-          {tab === "pending" && pending.length === 0 && (
+          {pending.length === 0 && (
             <div className="col-span-full py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mx-auto mb-4 text-outline-variant">
                 <ShieldCheck size={28} />
@@ -191,14 +234,90 @@ export default function KoordinatorPage() {
               <p className="text-on-surface-variant dark:text-outline-variant">Tidak ada pengajuan yang perlu ditinjau.</p>
             </div>
           )}
-          {tab === "semua" && semua.length === 0 && (
-            <div className="col-span-full py-16 text-center">
-              <p className="text-on-surface-variant dark:text-outline-variant">Belum ada transaksi di sistem.</p>
-            </div>
-          )}
+          {pending.map((t: any) => <TrxCard key={t.nomor} t={t} />)}
+        </div>
+      )}
 
-          {tab === "pending" && pending.map((t: any) => <TrxCard key={t.nomor} t={t} />)}
-          {tab === "semua" && semua.map((t: any) => <TrxCard key={t.nomor} t={t} />)}
+      {tab === "semua" && (
+        <div className="bg-surface dark:bg-surface-container-lowest/5 rounded-[24px] p-stack-lg border border-outline-variant/10 ambient-shadow-lvl2 animate-fadeIn">
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+            <div>
+              <h2 className="font-headline-md text-xl text-on-surface dark:text-inverse-on-surface">Riwayat Persetujuan Bulanan</h2>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                className="bg-background border border-outline-variant/30 rounded-xl px-4 py-2 text-on-surface outline-none"
+              />
+              {/* Export Excel */}
+              <button
+                disabled={history.length === 0 || isExporting !== ""}
+                onClick={async () => {
+                  setIsExporting("excel");
+                  await exportExcel(history, selectedMonth, "Riwayat_Persetujuan_PINSET");
+                  setIsExporting("");
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm text-sm"
+              >
+                {isExporting === "excel"
+                  ? <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+                  : <FileSpreadsheet size={16} />}
+                Excel
+              </button>
+              {/* Export PDF */}
+              <button
+                disabled={history.length === 0 || isExporting !== ""}
+                onClick={async () => {
+                  setIsExporting("pdf");
+                  await exportPDF(history, selectedMonth, "Riwayat_Persetujuan_PINSET");
+                  setIsExporting("");
+                }}
+                className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm text-sm"
+              >
+                {isExporting === "pdf"
+                  ? <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+                  : <FileDown size={16} />}
+                PDF
+              </button>
+
+            </div>
+          </div>
+
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr className="border-b-2 border-outline-variant/30 text-sm font-bold text-on-surface-variant">
+                  <th className="py-3 px-2">No</th>
+                  <th className="py-3 px-2">Peminjam</th>
+                  <th className="py-3 px-2">Alat (Qty)</th>
+                  <th className="py-3 px-2">Tujuan</th>
+                  <th className="py-3 px-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.length === 0 ? (
+                  <tr><td colSpan={5} className="text-center py-8 text-outline">Belum ada transaksi di bulan ini.</td></tr>
+                ) : history.map((t: any, idx: number) => {
+                  let namaAlat = formatArrayStr(t.nama_alat_produksi, true);
+
+                  return (
+                    <tr key={t.nomor} className="border-b border-outline-variant/10 hover:bg-surface-container-lowest/50 transition-colors text-sm text-on-surface">
+                      <td className="py-3 px-2">{idx + 1}</td>
+                      <td className="py-3 px-2">
+                        <p className="font-bold">{t.peminjam}</p>
+                        <p className="text-xs text-outline-variant">{t.peminjam_instansi}</p>
+                      </td>
+                      <td className="py-3 px-2 max-w-[200px] truncate" title={namaAlat}>{namaAlat}</td>
+                      <td className="py-3 px-2 max-w-[150px] truncate" title={t.tujuan_peminjaman}>{t.tujuan_peminjaman || "-"}</td>
+                      <td className="py-3 px-2"><PhaseChip trx={t} /></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

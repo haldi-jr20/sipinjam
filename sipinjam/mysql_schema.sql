@@ -40,28 +40,35 @@ CREATE TABLE `alat` (
 --
 
 INSERT INTO `alat` (`kode`, `nama`, `kategori`, `jumlah`, `kondisi`) VALUES
-('ALT-001', 'Ultrasonic Flaw Detector USM 100 - Waygate Technologies 150M5734', 'NDT Ultrasonik', 1, 'Kondisi Baik'),
-('ALT-002', 'Digital Earth Tester - Kyoritsu 4105A', 'Alat Ukur Listrik', 1, 'Kondisi Baik'),
-('ALT-003', 'Ultrasonic Thickness Gauge 2 - Dakota CMX', 'NDT Ultrasonik', 1, 'Service'),
-('ALT-004', 'Thermometer Infrared - FLIR TG165-X', 'Alat Ukur Suhu', 1, 'Kondisi Baik'),
-('ALT-005', 'Ultrasonic Thickness Gauge 1 - Cygnus MS-C4', 'NDT Ultrasonik', 1, 'Service'),
-('ALT-006', 'High Voltage Insulation Tester - Kyoritsu KEW 3125A', 'Alat Ukur Listrik', 1, 'Kondisi Baik'),
-('ALT-007', 'Sound Level Meter - AZ Instrumen AZ8922', 'Alat Ukur Akustik', 1, 'Kondisi Baik'),
-('ALT-008', 'Load Scale 5 Ton (Crane Scale) - CAS CASTON 1', 'Alat Ukur Berat', 1, 'Kondisi Baik'),
-('ALT-009', 'Electromagnetic Yoke - Johnson & Allen JAY-SON', 'NDT Magnetik', 1, 'Kondisi Baik'),
-('ALT-010', 'Tachometer - Lutron VT-8204', 'Alat Ukur Mekanik', 1, 'Kondisi Baik'),
-('ALT-011', 'Vibration Meter - Lutron VT-8204', 'Alat Ukur Mekanik', 1, 'Kondisi Baik'),
-('ALT-012', 'Load Scale 55 Ton - LCM Systems T24-HS-LS', 'Alat Ukur Berat', 1, 'Service'),
-('ALT-013', 'High Voltage Insulation Tester - Kyoritsu 3005A', 'Alat Ukur Listrik', 1, 'Kondisi Baik'),
-('ALT-014', 'Laser Distance Meter - Krisbow KW06-526', 'Alat Ukur Jarak', 1, 'Kondisi Baik'),
-('ALT-015', 'Ultrasonic Thickness Gauge 3 - Waygate Technologies DM5E', 'NDT Ultrasonik', 1, 'Kondisi Baik'),
-('ALT-016', 'Ultrasonic Thickness Gauge 4 - Inisize ISU-200D', 'NDT Ultrasonik', 1, 'Kondisi Baik'),
-('ALT-017', 'Permanent Yoke 1 - Western Instrumen WM-5C', 'NDT Magnetik', 1, 'Kondisi Baik'),
-('ALT-018', 'Permanent Yoke 2 - Johnson & Allen JAY-SON110', 'NDT Magnetik', 1, 'Kondisi Kurang Baik'),
-('ALT-019', 'Vakum Pump - Value', 'Peralatan', 2, 'Kondisi Baik'),
-('ALT-020', 'Vakum Pump - Krisbow', 'Peralatan', 2, 'Kondisi Baik'),
-('ALT-021', 'Box Vakum', 'Peralatan', 4, 'Kondisi Baik'),
-('ALT-022', 'Chipping', 'Peralatan', 3, 'Kondisi Baik');
+('ALT001', 'Ultrasonic Flaw Detector USM 100 - Waygate Technologies 150M5734', 'NDT Ultrasonik', 1, 'Kondisi Baik'),
+('ALT002', 'Digital Earth Tester - Kyoritsu 4105A', 'Alat Ukur Listrik', 1, 'Kondisi Baik'),
+('ALT003', 'Ultrasonic Thickness Gauge 2 - Dakota CMX', 'NDT Ultrasonik', 1, 'Service'),
+('ALT004', 'Thermometer Infrared - FLIR TG165-X', 'Alat Ukur Suhu', 1, 'Kondisi Baik'),
+('ALT005', 'Ultrasonic Thickness Gauge 1 - Cygnus MS-C4', 'NDT Ultrasonik', 1, 'Service'),
+('ALT006', 'High Voltage Insulation Tester - Kyoritsu KEW 3125A', 'Alat Ukur Listrik', 1, 'Kondisi Baik'),
+('ALT007', 'Sound Level Meter - AZ Instrumen AZ8922', 'Alat Ukur Akustik', 1, 'Kondisi Baik'),
+('ALT008', 'Load Scale 5 Ton (Crane Scale) - CAS CASTON 1', 'Alat Ukur Berat', 1, 'Kondisi Baik'),
+('ALT009', 'Electromagnetic Yoke - Johnson & Allen JAY-SON', 'NDT Magnetik', 1, 'Kondisi Baik'),
+('ALT010', 'Tachometer - Lutron VT-8204', 'Alat Ukur Mekanik', 1, 'Kondisi Baik'),
+('ALT011', 'Vibration Meter - Lutron VT-8204', 'Alat Ukur Mekanik', 1, 'Kondisi Baik'),
+('ALT012', 'Load Scale 55 Ton - LCM Systems T24-HS-LS', 'Alat Ukur Berat', 1, 'Service'),
+('ALT013', 'High Voltage Insulation Tester - Kyoritsu 3005A', 'Alat Ukur Listrik', 1, 'Kondisi Baik'),
+('ALT014', 'Laser Distance Meter - Krisbow KW06-526', 'Alat Ukur Jarak', 1, 'Kondisi Baik'),
+('ALT015', 'Ultrasonic Thickness Gauge 3 - Waygate Technologies DM5E', 'NDT Ultrasonik', 1, 'Kondisi Baik'),
+('ALT016', 'Ultrasonic Thickness Gauge 4 - Inisize ISU-200D', 'NDT Ultrasonik', 1, 'Kondisi Baik'),
+('ALT017', 'Permanent Yoke 1 - Western Instrumen WM-5C', 'NDT Magnetik', 1, 'Kondisi Baik'),
+('ALT018', 'Permanent Yoke 2 - Johnson & Allen JAY-SON110', 'NDT Magnetik', 1, 'Kondisi Kurang Baik'),
+('ALT019', 'Vakum Pump - Value', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT020', 'Vakum Pump - Value', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT021', 'Vakum Pump - Krisbow', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT022', 'Vakum Pump - Krisbow', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT023', 'Box Vakum', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT024', 'Box Vakum', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT025', 'Box Vakum', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT026', 'Box Vakum', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT027', 'Chipping', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT028', 'Chipping', 'Peralatan', 1, 'Kondisi Baik'),
+('ALT029', 'Chipping', 'Peralatan', 1, 'Kondisi Baik');
 
 -- --------------------------------------------------------
 
@@ -71,54 +78,22 @@ INSERT INTO `alat` (`kode`, `nama`, `kategori`, `jumlah`, `kondisi`) VALUES
 
 CREATE TABLE `transaksi` (
   `nomor` int NOT NULL,
-  `barcode_aset` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `nama_alat_produksi` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `barcode_aset` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nama_alat_produksi` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `peminjam` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `peminjam_instansi` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '-',
   `peminjam_divisi` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '-',
   `peminjam_kontak` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '-',
+  `tujuan_peminjaman` text COLLATE utf8mb4_unicode_ci,
   `persetujuan_koordinator` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `alasan_penolakan` text COLLATE utf8mb4_unicode_ci,
   `petugas_kontrol_alat` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `waktu_keluar` datetime(3) DEFAULT NULL,
-  `waktu_kembali` datetime(3) DEFAULT NULL,
+  `tanggal_peminjaman` date DEFAULT NULL,
+  `tanggal_pengembalian` date DEFAULT NULL,
   `keterangan` text COLLATE utf8mb4_unicode_ci,
   `catatan_kembali` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Triggers `transaksi`
---
-DELIMITER $$
-CREATE TRIGGER `trg_kurangi_stok_approved` BEFORE UPDATE ON `transaksi` FOR EACH ROW BEGIN
-  -- Hanya jalankan jika status persetujuan berubah menjadi 'approved'
-  -- dan sebelumnya BUKAN 'approved' (mencegah pengurangan dobel)
-  IF NEW.persetujuan_koordinator = 'approved'
-     AND OLD.persetujuan_koordinator <> 'approved'
-     AND NEW.barcode_aset IS NOT NULL
-  THEN
-    UPDATE `Alat`
-    SET `jumlah` = `jumlah` - 1
-    WHERE `kode` = NEW.barcode_aset;
-  END IF;
-END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `trg_tambah_stok_dikembalikan` BEFORE UPDATE ON `transaksi` FOR EACH ROW BEGIN
-  -- Hanya jalankan jika waktu_kembali baru saja diisi (sebelumnya NULL)
-  -- dan barcode_aset tersedia
-  IF OLD.waktu_kembali IS NULL
-     AND NEW.waktu_kembali IS NOT NULL
-     AND NEW.barcode_aset IS NOT NULL
-  THEN
-    UPDATE `Alat`
-    SET `jumlah` = `jumlah` + 1
-    WHERE `kode` = NEW.barcode_aset;
-  END IF;
-END
-$$
-DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -129,12 +104,8 @@ DELIMITER ;
 CREATE TABLE `user` (
   `id` int NOT NULL,
   `email` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `role` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `instansi` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `divisi` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `account_status` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `id_card` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `registered_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -143,9 +114,9 @@ CREATE TABLE `user` (
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`id`, `email`, `name`, `role`, `instansi`, `divisi`, `account_status`, `id_card`, `password`, `registered_at`) VALUES
-(1, 'budi@sipinjam.com', 'Ir. Budi Santoso', 'koordinator', 'PT. BKI Cabang Sorong', 'Produksi', 'approved', NULL, 'sipinjam123', '2026-06-19 03:08:40.916'),
-(2, 'hendra@sipinjam.com', 'Hendra Saputra', 'petugas', 'PT. BKI Cabang Sorong', 'Gudang', 'approved', NULL, 'sipinjam123', '2026-06-19 03:08:40.916');
+INSERT INTO `user` (`id`, `email`, `role`, `account_status`, `password`, `registered_at`) VALUES
+(1, 'koordinator@bki.com', 'koordinator', 'approved', 'koor2026', '2026-06-19 03:08:40.916'),
+(2, 'petugas@bki.com', 'petugas', 'approved', 'petugas2026', '2026-06-19 03:08:40.916');
 
 --
 -- Indexes for dumped tables
@@ -167,8 +138,7 @@ ALTER TABLE `transaksi`
 -- Indexes for table `user`
 --
 ALTER TABLE `user`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -190,3 +160,4 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+

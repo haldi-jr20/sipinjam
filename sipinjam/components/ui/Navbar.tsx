@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTransaction } from "@/lib/TransactionContext";
 import { Avt } from "./SharedUI";
 
-const PASS = "sipinjam123";
+const PASS = "pinset123";
 
 const ROLE_NAV: Record<string, any> = {
   peminjam:  { label:"Peminjam",        bg:"linear-gradient(135deg,#1E1B4B,#312E81)", acc:"#818CF8" },
@@ -74,14 +74,14 @@ export default function Navbar() {
             style={{height:22,width:"auto",objectFit:"contain"}}
           />
         </div>
-        <span style={{color:"white",fontWeight:700,fontSize:14}}>SiPinjam</span>
+        <span style={{color:"white",fontWeight:700,fontSize:14}}>PINSET</span>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <div style={{textAlign:"right"}}>
           <div style={{fontSize:10,color:cfg.acc,fontWeight:600,textTransform:"uppercase",letterSpacing:".07em"}}>{cfg.label}</div>
-          <div style={{fontSize:13,color:"white",fontWeight:500}}>{user.name}</div>
+          <div style={{fontSize:13,color:"white",fontWeight:500}} className="capitalize">{user.role}</div>
         </div>
-        <Avt name={user.name} size={30} bg="rgba(255,255,255,.15)"/>
+        <Avt name={user.role} size={30} bg="rgba(255,255,255,.15)"/>
         
         <button onClick={()=>setShowSettings(true)} style={{background:"rgba(255,255,255,.1)",border:"none",borderRadius:8,padding:6,cursor:"pointer",display:"flex"}}><Settings size={14} color="rgba(255,255,255,.8)"/></button>
         <button onClick={handleLogout} style={{background:"rgba(255,255,255,.1)",border:"none",borderRadius:8,padding:6,cursor:"pointer",display:"flex"}}><LogOut size={14} color="rgba(255,255,255,.8)"/></button>

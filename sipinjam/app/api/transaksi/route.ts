@@ -19,19 +19,20 @@ export async function POST(req: Request) {
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO \`Transaksi\`
         (\`barcode_aset\`, \`nama_alat_produksi\`, \`peminjam\`, \`peminjam_instansi\`, \`peminjam_divisi\`,
-         \`peminjam_kontak\`, \`persetujuan_koordinator\`, \`petugas_kontrol_alat\`, \`waktu_keluar\`, \`waktu_kembali\`, \`keterangan\`)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         \`peminjam_kontak\`, \`tujuan_peminjaman\`, \`tanggal_peminjaman\`, \`tanggal_pengembalian\`, \`persetujuan_koordinator\`, \`petugas_kontrol_alat\`, \`keterangan\`)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.barcode_aset || null,
-        body.nama_alat_produksi,
+        body.barcode_aset ? JSON.stringify(body.barcode_aset) : null,
+        body.nama_alat_produksi ? JSON.stringify(body.nama_alat_produksi) : '[]',
         body.peminjam,
         body.peminjam_instansi || '-',
         body.peminjam_divisi || '-',
         body.peminjam_kontak || '-',
+        body.tujuan_peminjaman || null,
+        body.tanggal_peminjaman || null,
+        body.tanggal_pengembalian || null,
         body.persetujuan_koordinator || 'pending',
         body.petugas_kontrol_alat || null,
-        body.waktu_keluar ? new Date(body.waktu_keluar) : null,
-        body.waktu_kembali ? new Date(body.waktu_kembali) : null,
         body.keterangan || null,
       ]
     );
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
     );
     return NextResponse.json(newTrx[0]);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Failed to create transaksi' }, { status: 500 });
   }
 }
@@ -65,39 +67,52 @@ export async function PUT(req: Request) {
 
     switch (action) {
       case "APPROVE":
-        // Stok otomatis dikurangi oleh trigger trg_kurangi_stok_approved
         await pool.query<ResultSetHeader>(
           'UPDATE `Transaksi` SET `persetujuan_koordinator` = ? WHERE `nomor` = ?',
           ['approved', id]
         );
+        // Kurangi stok
+        if (trx.barcode_aset) {
+          try {
+            const alatList = JSON.parse(trx.barcode_aset);
+            for (const kode of alatList) {
+              await pool.query('UPDATE `Alat` SET `jumlah` = `jumlah` - 1 WHERE `kode` = ?', [kode]);
+            }
+          } catch(e) {}
+        }
         break;
 
       case "REJECT":
         await pool.query<ResultSetHeader>(
-          'UPDATE `Transaksi` SET `persetujuan_koordinator` = ? WHERE `nomor` = ?',
-          ['rejected', id]
+          'UPDATE `Transaksi` SET `persetujuan_koordinator` = ?, `alasan_penolakan` = ? WHERE `nomor` = ?',
+          ['rejected', body.alasan_penolakan || null, id]
         );
         break;
 
       case "KELUAR":
         await pool.query<ResultSetHeader>(
-          'UPDATE `Transaksi` SET `waktu_keluar` = NOW(3), `petugas_kontrol_alat` = ? WHERE `nomor` = ?',
+          'UPDATE `Transaksi` SET `petugas_kontrol_alat` = ? WHERE `nomor` = ?',
           [petugas || null, id]
         );
         break;
 
       case "KEMBALI":
-        // Stok otomatis ditambahkan oleh trigger trg_tambah_stok_dikembalikan
+        const finalCatatan = `[Kondisi: ${body.kondisi || 'Baik'}] ${body.catatan || ''}`.trim();
         await pool.query<ResultSetHeader>(
-          'UPDATE `Transaksi` SET `waktu_kembali` = NOW(3), `petugas_kontrol_alat` = ?, `catatan_kembali` = ? WHERE `nomor` = ?',
-          [petugas || null, body.catatan || null, id]
+          'UPDATE `Transaksi` SET `petugas_kontrol_alat` = ?, `catatan_kembali` = ? WHERE `nomor` = ?',
+          [petugas || null, finalCatatan, id]
         );
-        // Update kondisi alat jika ada perubahan (misal: rusak ringan setelah dipakai)
-        if (trx.barcode_aset && body.kondisi) {
-          await pool.query<ResultSetHeader>(
-            'UPDATE `Alat` SET `kondisi` = ? WHERE `kode` = ?',
-            [body.kondisi, trx.barcode_aset]
-          );
+        // Tambah stok & update kondisi alat
+        if (trx.barcode_aset) {
+          try {
+            const alatList = JSON.parse(trx.barcode_aset);
+            for (const kode of alatList) {
+              await pool.query(
+                'UPDATE `Alat` SET `jumlah` = `jumlah` + 1, `kondisi` = ? WHERE `kode` = ?',
+                [body.kondisi || 'Baik', kode]
+              );
+            }
+          } catch(e) {}
         }
         break;
     }
@@ -109,6 +124,8 @@ export async function PUT(req: Request) {
     );
     return NextResponse.json(updated[0]);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Failed to update transaksi' }, { status: 500 });
   }
 }
+

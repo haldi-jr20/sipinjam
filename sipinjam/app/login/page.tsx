@@ -12,7 +12,7 @@ const ROUTE: Record<string, string> = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, user, accounts } = useTransaction();
+  const { login, user, users, accounts } = useTransaction();
 
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -26,20 +26,17 @@ export default function LoginPage() {
   }, [user, router]);
 
   function doLogin() {
-    const a = accounts[email.toLowerCase().trim()];
-    if (!a) { setErr("Email tidak terdaftar."); return; }
+    const matchedUser = users.find((u: any) => u.email === email && u.password === pass);
+    if (!matchedUser) { setErr("Email, password salah atau akun tidak ditemukan."); return; }
     
     // Peminjam cannot login anymore
-    if (a.role === "peminjam") {
+    if (matchedUser.role === "peminjam") {
       setErr("Akses ditolak. Hubungi Petugas untuk peminjaman.");
       return;
     }
 
-    const userPass = a.password || "sipinjam123";
-    if (pass !== userPass) { setErr("Password salah."); return; }
-    
-    login({ ...a, email });
-    router.push(ROUTE[a.role] || "/");
+    login(matchedUser);
+    router.push(ROUTE[matchedUser.role] || "/");
   }
 
   return (
@@ -56,7 +53,7 @@ export default function LoginPage() {
         <div className="text-center mb-stack-lg flex flex-col items-center">
           <img src="/bki-logo.svg" alt="BKI Sorong Logo" className="h-16 w-auto mb-4" />
           <h1 className="font-display-lg text-display-lg text-on-background tracking-tighter">
-            SiPinjam<span className="text-primary">.</span>
+            PINSET<span className="text-primary">.</span>
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-stack-xs">
             PT Biro Klasifikasi Indonesia (Persero) Cabang Sorong
@@ -77,13 +74,13 @@ export default function LoginPage() {
           <div className="block animate-[fadeIn_0.3s_ease-out]">
             <form className="flex flex-col gap-stack-md" onSubmit={(e) => { e.preventDefault(); doLogin(); }}>
               <div className="flex flex-col gap-1">
-                <label className="font-label-md text-label-md text-on-surface-variant ml-1">Email Karyawan</label>
+                <label className="font-label-md text-label-md text-on-surface-variant ml-1">Email Perusahaan</label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">mail</span>
                   <input
                     value={email} onChange={e => { setEmail(e.target.value); setErr(""); }}
                     className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none placeholder:text-outline/70"
-                    placeholder="nama@sipinjam.com" type="email"
+                    type="email" placeholder="Contoh: bkisoq@gmail.com"
                   />
                 </div>
               </div>
@@ -104,7 +101,7 @@ export default function LoginPage() {
               </div>
 
               <button
-                disabled={!email || !pass}
+                disabled={!pass || !email}
                 className="mt-stack-sm w-full bg-primary hover:bg-primary-container disabled:bg-outline disabled:cursor-not-allowed text-on-primary font-label-md text-label-md py-3.5 rounded-lg shadow-md shadow-primary/20 transition-all flex justify-center items-center gap-2 group"
                 type="submit"
               >
@@ -112,6 +109,7 @@ export default function LoginPage() {
                 <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
               </button>
             </form>
+
           </div>
         </div>
 

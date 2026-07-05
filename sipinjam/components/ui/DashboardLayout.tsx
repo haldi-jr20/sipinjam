@@ -38,6 +38,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, pageTitle, pageSubtitle, headerActions }: DashboardLayoutProps) {
   const router = useRouter();
   const { user, logout } = useTransaction();
+  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
 
   if (!user) return null;
 
@@ -48,7 +49,8 @@ export default function DashboardLayout({ children, pageTitle, pageSubtitle, hea
     router.push("/login");
   }
 
-  const initials = (user.name || "?").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+  const displayName = user.role || "?";
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col antialiased relative overflow-x-hidden">
@@ -60,7 +62,7 @@ export default function DashboardLayout({ children, pageTitle, pageSubtitle, hea
           {/* Brand */}
           <div className="font-display-lg text-headline-md tracking-tighter text-primary flex items-center gap-2">
             <img src="/bki-logo.svg" alt="BKI Sorong Logo" className="h-8 w-auto object-contain" />
-            <span className="hidden md:inline">SiPinjam</span>
+            <span className="hidden md:inline">PINSET</span>
           </div>
 
           {/* Desktop Nav Links */}
@@ -84,7 +86,7 @@ export default function DashboardLayout({ children, pageTitle, pageSubtitle, hea
               {meta.label}
             </span>
             
-            <button onClick={handleLogout} className="p-2 hover:bg-surface-container-highest/20 rounded-full transition-colors" title="Logout">
+            <button onClick={() => setShowLogoutModal(true)} className="p-2 hover:bg-surface-container-highest/20 rounded-full transition-colors" title="Logout">
               <span className="material-symbols-outlined">logout</span>
             </button>
 
@@ -117,17 +119,40 @@ export default function DashboardLayout({ children, pageTitle, pageSubtitle, hea
         <div className="flex flex-col md:flex-row justify-between items-center px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto font-body-md text-body-md text-on-surface-variant gap-stack-md">
           <div className="font-display-lg text-headline-md flex items-center gap-2 opacity-80 hover:opacity-100 transition-opacity">
             <img src="/bki-logo.svg" alt="BKI Sorong Logo" className="h-6 w-auto object-contain grayscale opacity-70" />
-            <span className="hidden md:inline text-sm font-bold">SiPinjam</span>
+            <span className="hidden md:inline text-sm font-bold">PINSET</span>
           </div>
           <div className="flex gap-stack-lg text-sm text-center">
             <span className="text-on-surface-variant opacity-80">PT Biro Klasifikasi Indonesia (Persero)</span>
             <span className="text-on-surface-variant opacity-80">Cabang Sorong</span>
           </div>
           <div className="text-sm opacity-80 text-center">
-            © 2026 SiPinjam Industrial Systems. All Rights Reserved.
+            © 2026 PINSET Industrial Systems. All Rights Reserved.
           </div>
         </div>
       </footer>
+      {/* ─── Logout Modal ─── */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-surface dark:bg-inverse-surface rounded-[24px] p-6 w-full max-w-sm ambient-shadow-lvl2 border border-outline-variant/20 relative animate-fadeIn text-center">
+            <h3 className="font-headline-md text-lg text-on-surface dark:text-inverse-on-surface mb-2">Konfirmasi Keluar</h3>
+            <p className="text-sm text-on-surface-variant dark:text-outline-variant mb-6">Apakah Anda yakin ingin keluar dari sistem?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 bg-surface-container hover:bg-surface-container-high text-on-surface py-3 rounded-xl font-bold text-sm transition-all"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex-1 bg-error hover:bg-error/90 text-on-error py-3 rounded-xl font-bold text-sm transition-all"
+              >
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

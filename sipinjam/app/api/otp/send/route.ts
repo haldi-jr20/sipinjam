@@ -32,14 +32,14 @@ export async function POST(req: Request) {
 
     // Kirim Email
     await transporter.sendMail({
-      from: `"SiPinjam BKI" <${process.env.SMTP_USER}>`,
+      from: `"PINSET BKI" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: "Kode Verifikasi OTP Anda - SiPinjam",
+      subject: "Kode Verifikasi OTP Anda - PINSET",
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-          <h2 style="color: #4f46e5; margin-top: 0;">Kode Verifikasi SiPinjam</h2>
+          <h2 style="color: #4f46e5; margin-top: 0;">Kode Verifikasi PINSET</h2>
           <p style="color: #475569; font-size: 14px;">Halo,</p>
-          <p style="color: #475569; font-size: 14px;">Anda sedang melakukan pendaftaran di sistem SiPinjam PT. BKI. Berikut adalah kode OTP Anda:</p>
+          <p style="color: #475569; font-size: 14px;">Anda sedang melakukan pendaftaran di sistem PINSET PT. BKI. Berikut adalah kode OTP Anda:</p>
           <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
             <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0f172a;">${otp}</span>
           </div>

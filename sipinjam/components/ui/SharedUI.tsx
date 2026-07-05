@@ -6,16 +6,16 @@ import { Hourglass, Ban, ShieldCheck, PackageCheck, CheckCircle, X, Scan, Camera
 export function getPhase(t: any) {
   if (t.persetujuan_koordinator==="pending")                             return { label:"Menunggu Persetujuan", color:"#D97706", bg:"#FEF3C7", Icon:Hourglass };
   if (t.persetujuan_koordinator==="rejected")                            return { label:"Ditolak",              color:"#DC2626", bg:"#FEE2E2", Icon:Ban };
-  if (t.persetujuan_koordinator==="approved" && !t.waktu_keluar)         return { label:"Disetujui",            color:"#2563EB", bg:"#DBEAFE", Icon:ShieldCheck };
-  if (t.waktu_keluar && !t.waktu_kembali)               return { label:"Sedang Dipinjam",      color:"#7C3AED", bg:"#EDE9FE", Icon:PackageCheck };
-  return                                                       { label:"Transaksi Ditutup",    color:"#059669", bg:"#D1FAE5", Icon:CheckCircle };
+  if (t.persetujuan_koordinator==="approved" && !t.petugas_kontrol_alat) return { label:"Disetujui",            color:"#2563EB", bg:"#DBEAFE", Icon:ShieldCheck };
+  if (t.petugas_kontrol_alat && t.catatan_kembali === null)              return { label:"Sedang Dipinjam",      color:"#7C3AED", bg:"#EDE9FE", Icon:PackageCheck };
+  return                                                                 { label:"Transaksi Ditutup",    color:"#059669", bg:"#D1FAE5", Icon:CheckCircle };
 }
 
 export function getStep(t: any) {
   if (t.persetujuan_koordinator==="pending")                             return 1;
   if (t.persetujuan_koordinator==="rejected")                            return -1;
-  if (t.persetujuan_koordinator==="approved" && !t.waktu_keluar)         return 2;
-  if (t.waktu_keluar && !t.waktu_kembali)               return 3;
+  if (t.persetujuan_koordinator==="approved" && !t.petugas_kontrol_alat) return 2;
+  if (t.petugas_kontrol_alat && t.catatan_kembali === null)              return 3;
   return 4;
 }
 

@@ -26,16 +26,12 @@ export async function POST(req: Request) {
     }
 
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO \`User\` (\`email\`, \`name\`, \`role\`, \`instansi\`, \`divisi\`, \`account_status\`, \`id_card\`, \`password\`)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO \`User\` (\`email\`, \`role\`, \`account_status\`, \`password\`)
+       VALUES (?, ?, ?, ?)`,
       [
         body.email,
-        body.name,
         body.role,
-        body.instansi,
-        body.divisi,
         body.account_status,
-        body.id_card || null,
         body.password,
       ]
     );

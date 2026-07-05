@@ -1,9 +1,4 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=kinghaldijais@gmail.com
-SMTP_PASS=diyh onlv qjcy oycg
-OTP_SECRET_KEY=sangat_rahasia_dan_panjang_sekali_kuncinya
 
 # MySQL Database Connection Details
 DB_HOST=localhost
